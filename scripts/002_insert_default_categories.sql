@@ -1,0 +1,2 @@
+-- Insert default categories for existing users
+-- This will be handled by the app for new users
