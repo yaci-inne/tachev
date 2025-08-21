@@ -1,7 +1,5 @@
 "use client"
 
-export const dynamic = "force-dynamic"
-
 import type React from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -49,8 +47,12 @@ export default function DashboardPage() {
   const supabase = createClient()
 
   useEffect(() => {
+    if (!supabase) {
+      console.error("Supabase client not available")
+      return
+    }
     checkUser()
-  }, [])
+  }, [supabase])
 
   useEffect(() => {
     if (user) {
@@ -59,6 +61,11 @@ export default function DashboardPage() {
   }, [user])
 
   const checkUser = async () => {
+    if (!supabase) {
+      router.push("/auth/login")
+      return
+    }
+
     try {
       const {
         data: { user },
@@ -88,7 +95,7 @@ export default function DashboardPage() {
   }
 
   const loadCategories = async () => {
-    if (!user) return
+    if (!user || !supabase) return
 
     try {
       const { data, error } = await supabase
@@ -113,7 +120,7 @@ export default function DashboardPage() {
   }
 
   const createDefaultCategories = async () => {
-    if (!user) return
+    if (!user || !supabase) return
 
     const defaultCategories = [
       { name: "ÉTAT CIVIL", color: "#3B82F6", user_id: user.id },
@@ -133,7 +140,7 @@ export default function DashboardPage() {
   }
 
   const loadTasks = async () => {
-    if (!user) return
+    if (!user || !supabase) return
 
     try {
       const { data, error } = await supabase
@@ -152,7 +159,7 @@ export default function DashboardPage() {
 
   const addTask = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newTaskTitle.trim() || !user) return
+    if (!newTaskTitle.trim() || !user || !supabase) return
 
     try {
       const { data, error } = await supabase
@@ -176,6 +183,8 @@ export default function DashboardPage() {
   }
 
   const toggleTask = async (taskId: string, completed: boolean) => {
+    if (!supabase) return
+
     try {
       const { error } = await supabase
         .from("tasks")
@@ -191,6 +200,8 @@ export default function DashboardPage() {
   }
 
   const deleteTask = async (taskId: string) => {
+    if (!supabase) return
+
     try {
       const { error } = await supabase.from("tasks").delete().eq("id", taskId)
 
@@ -204,7 +215,7 @@ export default function DashboardPage() {
 
   const addCategory = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newCategoryName.trim() || !user) return
+    if (!newCategoryName.trim() || !user || !supabase) return
 
     try {
       const { data, error } = await supabase
@@ -229,6 +240,8 @@ export default function DashboardPage() {
   }
 
   const deleteCategory = async (categoryId: string) => {
+    if (!supabase) return
+
     try {
       const { error } = await supabase.from("categories").delete().eq("id", categoryId)
 
@@ -242,6 +255,8 @@ export default function DashboardPage() {
   }
 
   const handleLogout = async () => {
+    if (!supabase) return
+
     try {
       await supabase.auth.signOut()
       router.push("/auth/login")
@@ -279,6 +294,17 @@ export default function DashboardPage() {
   const completedTasks = tasks.filter((task) => task.completed).length
   const totalTasks = tasks.length
   const progressPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
+
+  if (!supabase) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Configuration manquante</h1>
+          <p className="text-slate-600">Les variables d'environnement Supabase ne sont pas configurées.</p>
+        </div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (
